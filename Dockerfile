@@ -21,40 +21,28 @@ MAINTAINER sathish26
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
-	git \
+	nano \
         curl \
 	python3 \
 	python3-dev \
 	python3-setuptools \
-	python3-pip \
-	nginx \
-	supervisor && \
+	python3-pip && \
 	pip3 install -U pip setuptools && \
    rm -rf /var/lib/apt/lists/*
-
-# install uwsgi now because it takes a little while
-RUN pip3 install uwsgi
-
-# setup all the configfiles
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY nginx-app.conf /etc/nginx/sites-available/default
-COPY supervisor-app.conf /etc/supervisor/conf.d/
 
 # COPY requirements.txt and RUN pip install BEFORE adding the rest of your code, this will cause Docker's caching mechanism
 # to prevent re-installing (all your) dependencies when you made a change a line or two in your app.
 
-COPY app/requirements.txt /home/docker/code/app/
-RUN pip3 install -r /home/docker/code/app/requirements.txt
+COPY requirements.txt /home/docker/code/app/
+
+RUN pip3 install virtualenv && \
+    python3 -m virtualenv /home/docker/django-saas-api && \
+    pip3 install -r /home/docker/code/app/requirements.txt
+    
 
 # add (the rest of) our code
 COPY . /home/docker/code/
 
-ENV LANG=en_IN
+expose 80 443
 
-# install django, normally you would remove this step because your project would already
-# be installed in the code/app/ directory
-#RUN django-admin.py startproject website /home/docker/code/app/
-
-EXPOSE 80 443
-
-CMD ["supervisord", "-n"]
+CMD ["python"]
